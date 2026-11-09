@@ -1,5 +1,6 @@
 import os
 import requests
+from sqlalchemy.exc import SQLAlchemyError
 
 from dotenv import load_dotenv
 
@@ -19,28 +20,40 @@ class DataManager:
         :param name: Name des Nutzers
         :return:
         """
-        new_user = User(name=name)
-        db.session.add(new_user)
-        db.session.commit()
+        try:
+            new_user = User(name=name)
+            db.session.add(new_user)
+            db.session.commit()
+            return new_user
 
-        return new_user
+        except SQLAlchemyError:
+            db.session.rollback()
+            return None
 
     def get_users(self):
         """
         :return: Liste aller Nutzer in der Datenbank
         """
-        users = User.query.all()
+        try:
+            users = User.query.all()
+            return users
 
-        return users
+        except SQLAlchemyError:
+            db.session.rollback()
+            return []
 
     def get_movies(self, user_id):
         """
         :param user_id: ID des Nutzers, dessen Filme aufgelistet werden sollen
         :return: eine Liste aller Filme eines bestimmten Nutzers
         """
-        movies = Movie.query.filter_by(user_id=user_id).all()
+        try:
+            movies = Movie.query.filter_by(user_id=user_id).all()
+            return movies
 
-        return movies
+        except SQLAlchemyError:
+            db.session.rollback()
+            return []
 
     def add_movie(self, title, user_id, year=None):
         """
@@ -49,7 +62,7 @@ class DataManager:
             title: Titel des Films, der hinzugefügt werden soll
             user_id: die ID des Nutzers, zu dessen Favoriten der Film hinzugefügt wird
             year: Optionales Erscheinungsjahr zur genaueren Filmsuche
-        :return: Erstelltes Filmobjekt oder None, falls kein Film gefunden wurde
+        :return: Filmobjekt bei Erfolg oder ein Fehlerstatus als String
         """
         params = {
             "apikey": OMDB_API_KEY,
@@ -65,10 +78,10 @@ class DataManager:
             data = response.json()
 
         except requests.exceptions.RequestException:
-            return None
+            return "api_error"
 
         if data.get("Response") == "False":
-            return None
+            return "not_found"
 
         movie = Movie(
             name=data['Title'],
@@ -78,40 +91,56 @@ class DataManager:
             user_id=user_id
         )
 
-        db.session.add(movie)
-        db.session.commit()
+        try:
+            db.session.add(movie)
+            db.session.commit()
+            return movie
 
-        return movie
+        except SQLAlchemyError:
+            db.session.rollback()
+            return "database_error"
 
-    def update_movie(self, movie_id, new_title):
+    def update_movie(self, movie_id, user_id, new_title):
         """
         Aktualisiere die Details eines bestimmten Films in der Datenbank.
-        :param movie_id: ID des bestehenden Films
-        :param new_title: neuer Titel des Films
+        :param:
+            movie_id: ID des bestehenden Films
+            new_title: neuer Titel des Films
+            user_id: ID des Nutzers, dem der Film zugeordnet ist
         :return: aktualisierter Film oder None, falls nicht gefunden
         """
-        movie = db.session.get(Movie, movie_id)
+        movie = Movie.query.filter_by(id=movie_id, user_id=user_id).first()
 
         if movie is None:
             return None
 
-        movie.name = new_title
-        db.session.commit()
+        try:
+            movie.name = new_title
+            db.session.commit()
+            return movie
 
-        return movie
+        except SQLAlchemyError:
+            db.session.rollback()
+            return None
 
-    def delete_movie(self, movie_id):
+    def delete_movie(self, movie_id, user_id):
         """
         Entferne den Film aus der Favoritenliste des Nutzers.
-        :param movie_id: ID des Films
+        :param:
+            movie_id: ID des Films
+            user_id: ID des Nutzers, dem der Film zugeordnet ist
         :return: True bei Erfolg, False, falls nicht gefunden
         """
-        movie = db.session.get(Movie, movie_id)
+        movie = Movie.query.filter_by(id=movie_id, user_id=user_id).first()
 
         if movie is None:
             return False
 
-        db.session.delete(movie)
-        db.session.commit()
+        try:
+            db.session.delete(movie)
+            db.session.commit()
+            return True
 
-        return True
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False
