@@ -143,6 +143,22 @@ def delete_movie(user_id, movie_id):
     return redirect(url_for('get_user_movies', user_id=user_id))
 
 
+@app.route('/users/<int:user_id>/delete', methods=['POST'])
+def delete_user(user_id):
+    """Löscht einen Nutzer und seine gespeicherten Filme."""
+    success = data_manager.delete_user(user_id)
+
+    if not success:
+        message = "The user could not be deleted. Please try again."
+        return render_template(
+            'index.html',
+            users=data_manager.get_users(),
+            message=message
+        )
+
+    return redirect(url_for('index'))
+
+
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
@@ -152,4 +168,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
 
-    app.run()
+    app.run(port=5001)

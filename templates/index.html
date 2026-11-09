@@ -7,7 +7,15 @@
     {% for user in users %}
         <article class="user-card">
             <h3>{{ user.name }}</h3>
-            <a href="{{ url_for('get_user_movies', user_id=user.id) }}" class="btn">View Movies</a>
+
+            <a href="{{ url_for('get_user_movies', user_id=user.id) }}" class="btn">
+                View Movies
+            </a>
+
+            <form action="{{ url_for('delete_user', user_id=user.id) }}" method="post"
+                  onsubmit="return confirm('Are you sure you want to delete this user and all their movies?');">
+                <button type="submit" class="btn delete-button">Delete User</button>
+            </form>
         </article>
     {% else %}
         <p class="empty-message">No users yet.</p>

@@ -144,3 +144,22 @@ class DataManager:
         except SQLAlchemyError:
             db.session.rollback()
             return False
+
+    def delete_user(self, user_id):
+        """Entfernt einen Nutzer und seine Filme aus der Datenbank.
+        :param user_id: ID des zu löschenden Nutzers
+        :return: True bei Erfolg, False bei Fehler oder wenn nicht gefunden
+        """
+        user = db.session.get(User, user_id)
+
+        if user is None:
+            return False
+
+        try:
+            db.session.delete(user)
+            db.session.commit()
+            return True
+
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False
