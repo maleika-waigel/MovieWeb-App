@@ -39,7 +39,7 @@ nav a{
 
 h1 {
     margin: 30px 0;
-    font-size: 21px;
+    font-size: 25px;
 }
 
 main {
@@ -171,6 +171,17 @@ form .delete-button{
     margin-top: 30px;
 }
 
+.error {
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+.error img {
+    width: 400px;
+    max-width: 90%;
+    margin: 0px auto;
+}
+
 /* Tablets */
 @media (min-width: 600px) {
     header {
@@ -218,5 +229,8 @@ form .delete-button{
     }
     .new_user input{
         width: 100%!important;
+    }
+    h1 {
+        font-size: 40px;
     }
 }
